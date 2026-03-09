@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Eval: Robot Dataset Evaluation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #4ade80, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            padding: 0 20px 20px;
+            overflow: hidden;
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .panel-left {
+            max-width: 50%;
+        }
+
+        .panel-right {
+            max-width: 50%;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #000;
+        }
+
+        /* Video Upload Area */
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .upload-area.has-file {
+            border-color: #4ade80;
+            border-style: solid;
+            padding: 15px;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #60a5fa;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .file-name {
+            color: #4ade80;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .remove-file {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-file:hover {
+            background: rgba(248, 113, 113, 0.3);
+        }
+
+        /* Video Preview */
+        .video-preview {
+            margin-top: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .video-preview video {
+            width: 100%;
+            max-height: 180px;
+            background: #000;
+        }
+
+        /* Queries Section */
+        .queries-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .query-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .query-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .query-input::placeholder {
+            color: #666;
+        }
+
+        .remove-query {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .remove-query:hover {
+            background: rgba(248, 113, 113, 0.3);
+        }
+
+        .add-query-btn {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            border: 1px dashed rgba(96, 165, 250, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            transition: all 0.3s;
+        }
+
+        .add-query-btn:hover {
+            background: rgba(96, 165, 250, 0.3);
+            border-style: solid;
+        }
+
+        /* Analyze Button */
+        .analyze-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(74, 222, 128, 0.3);
+        }
+
+        .analyze-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            height: 16px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #60a5fa);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 8px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #4ade80;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results Section */
+        .results-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .results-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .results-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .results-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .results-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #555;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .results-placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .results-placeholder-text {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .results-placeholder-hint {
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-left: 4px solid #60a5fa;
+        }
+
+        .result-item.success {
+            border-left-color: #4ade80;
+        }
+
+        .result-item.error {
+            border-left-color: #f87171;
+        }
+
+        .result-query {
+            font-weight: 600;
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .result-summary {
+            color: #ddd;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+
+        .events-list {
+            margin-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 12px;
+        }
+
+        .event-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+
+        .event-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .event-time {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .event-label {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .event-confidence {
+            color: #888;
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+
+        .event-description {
+            color: #bbb;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: #f87171;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 15px;
+            color: #555;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .panel-left, .panel-right {
+                max-width: 100%;
+            }
+
+            body {
+                overflow: auto;
+            }
+
+            .results-panel {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .upload-area {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Auto-Eval: Robot Dataset Evaluation</h1>
+            <p class="subtitle">Upload a robot video and analyze its behavior using NomadML</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel - Input -->
+            <div class="panel panel-left">
+                <div class="error-message" id="errorMessage"></div>
+
+                <!-- Upload Section -->
+                <div class="card" id="uploadCard">
+                    <div class="card-title">
+                        <span class="icon">1</span>
+                        Upload Video
+                    </div>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" accept="video/*">
+                        <div class="upload-icon">&#128249;</div>
+                        <div class="upload-text">Drop your video here or click to browse</div>
+                        <div class="upload-hint">Supports MP4, AVI, MOV, WebM (max 3MB)</div>
+                        <div class="file-info" id="fileInfo" style="display: none;">
+                            <span class="file-name" id="fileName"></span>
+                            <button class="remove-file" id="removeFile">Remove</button>
+                        </div>
+                    </div>
+                    <div class="video-preview" id="videoPreview">
+                        <video id="previewVideo" controls></video>
+                    </div>
+                </div>
+
+                <!-- Queries Section -->
+                <div class="card" id="queriesCard">
+                    <div class="card-title">
+                        <span class="icon">2</span>
+                        Analysis Queries
+                    </div>
+                    <div class="queries-list" id="queriesList">
+                        <div class="query-item">
+                            <input type="text" class="query-input" placeholder="e.g., What is the robot doing?" value="">
+                        </div>
+                    </div>
+                    <button class="add-query-btn" id="addQueryBtn">+ Add Another Query</button>
+                </div>
+
+                <!-- Analyze Button -->
+                <div class="card">
+                    <button class="analyze-btn" id="analyzeBtn" disabled>
+                        Analyze Video
+                    </button>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="card progress-section" id="progressSection">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">
+                        <span class="spinner"></span>
+                        Uploading video...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="panel panel-right">
+                <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                    <div class="card-title">
+                        <span class="icon">3</span>
+                        Analysis Results
+                    </div>
+                    <div class="results-panel" id="resultsPanel">
+                        <div class="results-placeholder" id="resultsPlaceholder">
+                            <div class="results-placeholder-icon">&#128202;</div>
+                            <div class="results-placeholder-text">Results will appear here</div>
+                            <div class="results-placeholder-hint">Upload a video and run analysis to see results</div>
+                        </div>
+                        <div id="resultsContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Powered by <a href="https://nomadicml.com" target="_blank">NomadML</a>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const removeFileBtn = document.getElementById('removeFile');
+        const videoPreview = document.getElementById('videoPreview');
+        const previewVideo = document.getElementById('previewVideo');
+        const queriesList = document.getElementById('queriesList');
+        const addQueryBtn = document.getElementById('addQueryBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const resultsPanel = document.getElementById('resultsPanel');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsPlaceholder = document.getElementById('resultsPlaceholder');
+        const errorMessage = document.getElementById('errorMessage');
+        const uploadCard = document.getElementById('uploadCard');
+        const queriesCard = document.getElementById('queriesCard');
+
+        let selectedFile = null;
+
+        // File Upload Handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('video/')) {
+                showError('Please select a valid video file');
+                return;
+            }
+
+            if (file.size > 3 * 1024 * 1024) {
+                showError('File size must be less than 3MB (Vercel serverless limit). Try a shorter clip.');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileInfo.style.display = 'flex';
+            uploadArea.classList.add('has-file');
+
+            // Hide upload prompts when file is selected
+            uploadArea.querySelector('.upload-icon').style.display = 'none';
+            uploadArea.querySelector('.upload-text').style.display = 'none';
+            uploadArea.querySelector('.upload-hint').style.display = 'none';
+
+            // Show video preview
+            const url = URL.createObjectURL(file);
+            previewVideo.src = url;
+            videoPreview.style.display = 'block';
+
+            updateAnalyzeButton();
+            hideError();
+        }
+
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            uploadArea.classList.remove('has-file');
+            videoPreview.style.display = 'none';
+            previewVideo.src = '';
+
+            // Show upload prompts again
+            uploadArea.querySelector('.upload-icon').style.display = 'block';
+            uploadArea.querySelector('.upload-text').style.display = 'block';
+            uploadArea.querySelector('.upload-hint').style.display = 'block';
+
+            updateAnalyzeButton();
+        });
+
+        // Query Management
+        addQueryBtn.addEventListener('click', () => {
+            const queryItem = document.createElement('div');
+            queryItem.className = 'query-item';
+            queryItem.innerHTML = `
+                <input type="text" class="query-input" placeholder="Enter your question about the video...">
+                <button class="remove-query">×</button>
+            `;
+
+            queryItem.querySelector('.remove-query').addEventListener('click', () => {
+                queryItem.remove();
+                updateAnalyzeButton();
+            });
+
+            queryItem.querySelector('.query-input').addEventListener('input', updateAnalyzeButton);
+
+            queriesList.appendChild(queryItem);
+        });
+
+        // Initial query input listener
+        document.querySelector('.query-input').addEventListener('input', updateAnalyzeButton);
+
+        function getQueries() {
+            const inputs = queriesList.querySelectorAll('.query-input');
+            return Array.from(inputs)
+                .map(input => input.value.trim())
+                .filter(q => q.length > 0);
+        }
+
+        function updateAnalyzeButton() {
+            const queries = getQueries();
+            analyzeBtn.disabled = !selectedFile || queries.length === 0;
+        }
+
+        // Analysis
+        analyzeBtn.addEventListener('click', startAnalysis);
+
+        async function startAnalysis() {
+            if (!selectedFile || getQueries().length === 0) return;
+
+            hideError();
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Analyzing...';
+            progressSection.classList.add('active');
+            resultsPlaceholder.style.display = 'none';
+            resultsContainer.innerHTML = '';
+
+            try {
+                // Convert file to base64
+                setProgress(10, 'Reading video file...');
+                const base64 = await fileToBase64(selectedFile);
+
+                setProgress(30, 'Uploading to NomadML...');
+
+                // Send to API
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        video: base64,
+                        filename: selectedFile.name,
+                        queries: getQueries()
+                    })
+                });
+
+                // Check for non-JSON response (e.g., Vercel error)
+                const responseText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    if (responseText.includes('Request Entity Too Large') || responseText.includes('FUNCTION_PAYLOAD_TOO_LARGE')) {
+                        throw new Error('Video file is too large. Please use a file under 3MB.');
+                    }
+                    throw new Error('Server error: ' + responseText.substring(0, 100));
+                }
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+                setProgress(70, 'Processing results...');
+
+                // Check for pending results
+                const finalResults = await processPendingResults(data.results);
+
+                setProgress(100, 'Complete!');
+
+                // Show results
+                setTimeout(() => {
+                    showResults(finalResults);
+                }, 500);
+
+            } catch (error) {
+                showError(error.message);
+                resetUI();
+            }
+        }
+
+        async function processPendingResults(results) {
+            const finalResults = [];
+
+            for (const result of results) {
+                if (result.pending && result.batch_id) {
+                    // Poll for result
+                    setProgress(80, `Waiting for: ${result.query.substring(0, 30)}...`);
+
+                    const pollResult = await pollForResult(result.batch_id, result.query);
+                    finalResults.push(pollResult);
+                } else {
+                    finalResults.push(result);
+                }
+            }
+
+            return finalResults;
+        }
+
+        async function pollForResult(batchId, query, maxAttempts = 30) {
+            for (let i = 0; i < maxAttempts; i++) {
+                try {
+                    const response = await fetch(`/api/status?batch_id=${batchId}`);
+                    const data = await response.json();
+
+                    if (data.status === 'completed' && data.result) {
+                        return {
+                            query: query,
+                            response: data.result.response,
+                            confidence: data.result.confidence,
+                            success: true
+                        };
+                    }
+                } catch (e) {
+                    console.log('Polling...', e);
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            return {
+                query: query,
+                response: 'Analysis timed out. Please try again.',
+                success: false,
+                error: true
+            };
+        }
+
+        function setProgress(percent, text) {
+            progressBar.style.width = `${percent}%`;
+            progressText.innerHTML = `<span class="spinner"></span>${text}`;
+        }
+
+        function showResults(results) {
+            progressSection.classList.remove('active');
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = 'ANALYZE VIDEO';
+
+            resultsContainer.innerHTML = results.map(result => {
+                const summary = result.summary || result.response || result.error || 'No response';
+                const events = result.events || [];
+
+                let eventsHtml = '';
+                if (events.length > 0) {
+                    eventsHtml = `
+                        <div class="events-list">
+                            ${events.map(event => `
+                                <div class="event-item">
+                                    <div class="event-header">
+                                        <span class="event-time">${escapeHtml(event.time)}</span>
+                                        <span class="event-label">${escapeHtml(event.label)}</span>
+                                        ${event.confidence ? `<span class="event-confidence">${Math.round(event.confidence * 100)}% confidence</span>` : ''}
+                                    </div>
+                                    <div class="event-description">${escapeHtml(event.description)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="result-item ${result.success ? 'success' : 'error'}">
+                        <div class="result-query">${escapeHtml(result.query)}</div>
+                        <div class="result-summary">${escapeHtml(summary)}</div>
+                        ${eventsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function resetUI() {
+            progressSection.classList.remove('active');
+            progressBar.style.width = '0%';
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = 'ANALYZE VIDEO';
+            updateAnalyzeButton();
+            if (resultsContainer.innerHTML === '') {
+                resultsPlaceholder.style.display = 'flex';
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('active');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    // Remove data URL prefix
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+    </script>
+</body>
+</html>

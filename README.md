@@ -4,6 +4,10 @@
 
 Automated evaluation system for robot manipulation datasets using the NomadicML API. Analyze robot videos from any Hugging Face dataset to evaluate task success, identify failure modes, and generate performance metrics.
 
+**Try the live demo:** [https://autoeval-taupe.vercel.app](https://autoeval-taupe.vercel.app)
+
+![Auto-Eval Results Viewer](results.png)
+
 ## Features
 
 - **Robot Video Analysis**: Evaluate grasp success, object transport, placement accuracy
