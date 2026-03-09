@@ -1,0 +1,6 @@
+query_label,analysis_query,confidence_level,thumbnail,frame_timestamps,frame_gps,enhanced_motion,analysis_type,agent_name
+"Traffic signs","Find all the traffic signs in the video",low,true,false,false,false,ask,
+"Vehicle Stops","Detect instances where the vehicle comes to a complete stop at a stop sign",high,false,false,false,false,ask,
+"Pedestrian Violations","List of pedestrian violations such as jaywalking or crossing against signals",low,false,false,false,false,ask,
+"Traffic Incidents","Identify any traffic incidents, near-misses, or collisions",low,false,false,false,false,ask,
+"General Edge Case","",low,false,false,false,false,agent,General Edge Case

@@ -1,0 +1,2 @@
+nomadicml
+huggingface_hub
